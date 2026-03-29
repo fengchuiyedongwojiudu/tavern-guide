@@ -1,212 +1,62 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>酒馆</title>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@300;400;500&family=Playfair+Display:ital,wght@0,400;1,400&family=Noto+Sans+SC:wght@300;400&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>简易酒馆</title>
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
+  <div id="bg"></div>
 
-<!-- 背景层 -->
-<div id="bgLayer"></div>
-<canvas id="particles"></canvas>
+  <div class="app">
+    <aside class="sidebar" id="sidebar">
+      <h2>设置</h2>
 
-<!-- ======= 设置侧边栏 ======= -->
-<div class="sidebar" id="sidebar">
-    <div class="sidebar-inner">
-        <div class="sidebar-header">
-            <span class="sidebar-title">酒 馆 设 置</span>
-            <button class="sidebar-close" id="sidebarClose">✕</button>
+      <label>代理地址（必须是兼容 OpenAI 的接口根地址）</label>
+      <input id="apiBase" type="text" placeholder="https://xxx.com/v1" />
+
+      <label>API Key</label>
+      <input id="apiKey" type="password" placeholder="sk-xxxx" />
+
+      <label>模型名</label>
+      <input id="model" type="text" placeholder="gpt-4o-mini" value="gpt-4o-mini" />
+
+      <label>系统提示词</label>
+      <textarea id="systemPrompt" rows="6" placeholder="你是一个温柔的酒馆角色……"></textarea>
+
+      <label>你的名字</label>
+      <input id="userName" type="text" value="我" />
+
+      <label>角色名字</label>
+      <input id="charName" type="text" value="酒馆老板娘" />
+
+      <label>背景图片</label>
+      <input id="bgUpload" type="file" accept="image/*" />
+
+      <button id="saveSettings">保存设置</button>
+      <button id="testApi">测试连接</button>
+      <button id="clearChat">清空聊天</button>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <button id="toggleSidebar">☰</button>
+        <div class="title">
+          <div id="chatTitle">简易酒馆</div>
+          <div id="status">未连接</div>
         </div>
+      </header>
 
-        <!-- API设置 -->
-        <div class="sb-section">
-            <div class="sb-section-title">API 连接</div>
-            <div class="sb-field">
-                <label>代理地址</label>
-                <input type="url" id="cfgProxy" placeholder="https://your-proxy.com/v1">
-                <span class="sb-hint">填你的中转地址，末尾 /v1</span>
-            </div>
-            <div class="sb-field">
-                <label>API 密钥</label>
-                <div class="pw-wrap">
-                    <input type="password" id="cfgKey" placeholder="sk-xxxxxxxx">
-                    <button class="eye" data-for="cfgKey">👁</button>
-                </div>
-            </div>
-            <div class="sb-field">
-                <label>模型</label>
-                <input type="text" id="cfgModel" placeholder="gpt-4o / claude-3-5-sonnet" value="gpt-4o">
-                <span class="sb-hint">手动填写模型名称</span>
-            </div>
-            <button class="sb-btn accent" id="testApi">✓ 测试连接</button>
-        </div>
+      <section class="messages" id="messages"></section>
 
-        <!-- 角色设置 -->
-        <div class="sb-section">
-            <div class="sb-section-title">角 色 设 定</div>
-            <div class="sb-field">
-                <label>你的名字</label>
-                <input type="text" id="cfgUserName" placeholder="User" value="User">
-            </div>
-            <div class="sb-field">
-                <label>角色名字</label>
-                <input type="text" id="cfgCharName" placeholder="助手" value="助手">
-            </div>
-            <div class="sb-field">
-                <label>系统提示词 / 角色设定</label>
-                <textarea id="cfgSystem" rows="6" placeholder="在这里描述角色的性格、背景、世界观...
+      <div class="inputBar">
+        <textarea id="userInput" placeholder="输入消息，Enter发送，Shift+Enter换行"></textarea>
+        <button id="sendBtn">发送</button>
+      </div>
+    </main>
+  </div>
 
-例如：你是一个神秘的酒馆老板娘，温柔而睿智...">你是一个聪明、温柔、富有文学气息的AI助手。请用中文回复，语气自然亲切。</textarea>
-            </div>
-            <div class="sb-field">
-                <label>第一句话（开场白）</label>
-                <textarea id="cfgGreeting" rows="3" placeholder="角色的开场白...">*轻轻推开木质的门，烛光摇曳* 欢迎来到这里，今晚想聊些什么？</textarea>
-            </div>
-        </div>
-
-        <!-- 参数 -->
-        <div class="sb-section">
-            <div class="sb-section-title">生 成 参 数</div>
-            <div class="sb-field">
-                <div class="slider-row">
-                    <label>Temperature</label>
-                    <span class="sv" id="svTemp">0.80</span>
-                </div>
-                <input type="range" class="range" id="cfgTemp" min="0" max="2" step="0.01" value="0.8">
-                <div class="range-marks"><span>精确</span><span>平衡</span><span>创意</span></div>
-            </div>
-            <div class="sb-field">
-                <div class="slider-row">
-                    <label>Max Tokens</label>
-                    <span class="sv" id="svMax">1024</span>
-                </div>
-                <input type="range" class="range" id="cfgMax" min="64" max="8192" step="64" value="1024">
-                <div class="range-marks"><span>64</span><span>2048</span><span>8192</span></div>
-            </div>
-            <div class="sb-field">
-                <div class="slider-row">
-                    <label>上下文轮数</label>
-                    <span class="sv" id="svCtx">20</span>
-                </div>
-                <input type="range" class="range" id="cfgCtx" min="2" max="50" step="1" value="20">
-                <div class="range-marks"><span>2轮</span><span>25轮</span><span>50轮</span></div>
-                <span class="sb-hint">AI能记住的对话轮数</span>
-            </div>
-        </div>
-
-        <!-- 背景设置 -->
-        <div class="sb-section">
-            <div class="sb-section-title">聊 天 背 景</div>
-            <div class="sb-field">
-                <div class="bg-upload-zone" id="bgUploadZone">
-                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
-                    <span>点击或拖拽上传背景图</span>
-                </div>
-                <input type="file" id="bgFile" accept="image/*" style="display:none">
-                <div class="bg-presets">
-                    <button class="bp" data-g="linear-gradient(135deg,#0c0c14,#1a1a2e)" title="深夜星空"><div style="background:linear-gradient(135deg,#0c0c14,#1a1a2e)"></div><span>深夜</span></button>
-                    <button class="bp" data-g="linear-gradient(135deg,#1a0f00,#2d1b00,#1a0a00)" title="烛火暖意"><div style="background:linear-gradient(135deg,#1a0f00,#2d1b00,#1a0a00)"></div><span>烛火</span></button>
-                    <button class="bp" data-g="linear-gradient(135deg,#0a1a0d,#0d2410,#061208)" title="幽深森林"><div style="background:linear-gradient(135deg,#0a1a0d,#0d2410,#061208)"></div><span>森林</span></button>
-                    <button class="bp" data-g="linear-gradient(135deg,#120818,#1a0a1e,#0e0612)" title="神秘魔法"><div style="background:linear-gradient(135deg,#120818,#1a0a1e,#0e0612)"></div><span>魔法</span></button>
-                    <button class="bp" data-g="linear-gradient(135deg,#0a0a0a,#1c1c1c,#0a0a0a)" title="纯黑"><div style="background:linear-gradient(135deg,#0a0a0a,#1c1c1c,#0a0a0a)"></div><span>纯黑</span></button>
-                    <button class="bp" data-g="linear-gradient(135deg,#0f0c1a,#1e1428,#0f0c1a)" title="暮色"><div style="background:linear-gradient(135deg,#0f0c1a,#1e1428,#0f0c1a)"></div><span>暮色</span></button>
-                </div>
-            </div>
-            <div class="sb-field">
-                <div class="slider-row"><label>背景暗度</label><span class="sv" id="svDim">50</span>%</div>
-                <input type="range" class="range" id="cfgDim" min="0" max="95" step="5" value="50">
-            </div>
-            <div class="sb-field">
-                <div class="slider-row"><label>背景模糊</label><span class="sv" id="svBlur">0</span></div>
-                <input type="range" class="range" id="cfgBlur" min="0" max="20" step="1" value="0">
-            </div>
-            <button class="sb-btn" id="bgClear">✕ 清除背景</button>
-        </div>
-
-        <!-- 气泡样式 -->
-        <div class="sb-section">
-            <div class="sb-section-title">气 泡 样 式</div>
-            <div class="sb-field">
-                <div class="slider-row"><label>气泡透明度</label><span class="sv" id="svBubble">85</span>%</div>
-                <input type="range" class="range" id="cfgBubble" min="20" max="100" step="5" value="85">
-            </div>
-            <div class="sb-field">
-                <label>气泡风格</label>
-                <div class="style-btns">
-                    <button class="style-btn active" data-style="glass">玻璃</button>
-                    <button class="style-btn" data-style="solid">实色</button>
-                    <button class="style-btn" data-style="minimal">极简</button>
-                </div>
-            </div>
-        </div>
-
-        <div class="sb-bottom">
-            <button class="sb-btn" id="clearChat">🗑 清空对话</button>
-            <button class="sb-btn accent" id="applySettings">应用设置 →</button>
-        </div>
-    </div>
-</div>
-<div class="sidebar-mask" id="sidebarMask"></div>
-
-<!-- ======= 主界面 ======= -->
-<div class="main" id="main">
-
-    <!-- 顶部栏 -->
-    <header class="topbar">
-        <button class="topbar-btn" id="openSidebar">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
-        </button>
-        <div class="topbar-center">
-            <span class="topbar-char" id="topbarChar">助手</span>
-            <span class="topbar-status" id="topbarStatus">● 就绪</span>
-        </div>
-        <button class="topbar-btn" id="newChat">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 5v14M5 12h14"/></svg>
-        </button>
-    </header>
-
-    <!-- 聊天区域 -->
-    <div class="chat-area" id="chatArea">
-
-        <!-- 欢迎页（没有对话时显示） -->
-        <div class="welcome" id="welcome">
-            <div class="welcome-day" id="welcomeDay">29</div>
-            <div class="welcome-month" id="welcomeMonth">March · Sunday</div>
-            <div class="welcome-quote">
-                <div class="wq-bar"></div>
-                <div>
-                    <p class="wq-text">在虚构的故事中，寻找真实的感动</p>
-                    <p class="wq-author">— 酒馆</p>
-                </div>
-            </div>
-            <button class="start-btn" id="startBtn">开 始 对 话</button>
-        </div>
-
-        <!-- 消息列表 -->
-        <div class="messages" id="messages"></div>
-    </div>
-
-    <!-- 输入区 -->
-    <div class="input-area" id="inputArea">
-        <div class="input-wrap">
-            <textarea id="userInput" placeholder="说点什么…" rows="1" maxlength="4000"></textarea>
-            <button class="send-btn" id="sendBtn">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13"/><path d="M22 2L15 22 11 13 2 9l20-7z"/></svg>
-            </button>
-        </div>
-        <div class="input-footer">
-            <span id="inputCount">0 / 4000</span>
-            <span>Enter 发送 · Shift+Enter 换行</span>
-        </div>
-    </div>
-</div>
-
-<!-- Toast -->
-<div id="toasts"></div>
-
-<script src="app.js"></script>
+  <script src="app.js"></script>
 </body>
 </html>
